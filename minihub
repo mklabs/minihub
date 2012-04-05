@@ -1,0 +1,145 @@
+#!/bin/bash
+set -e
+
+prefix=$MINIHUB_PREFIX;
+browser=$MINIHUB_BROWSER;
+editor=$MINIHUB_EDITOR;
+
+args=`getopt $*`
+
+help () {
+
+    cat<<EOF
+
+Usage: minihub [command]
+
+Commands:
+
+  browse              open the GitHub repository page
+  clone               clone the git repo in \$MINIHUB_PREFIX/<user>/<repo> location
+  issue               open the given issue in default browser
+  edit                Opens the project folder in the default editor
+  help                print this msg
+
+Env:
+
+  \$MINIHUB_PREFIX    clone install location, defaults to ~/src.
+  \$MINIHUB_BROWSER   the browser that is called by minihub to open websites.
+  \$MINIHUB_EDITOR    the editor that is called by minihub with the edit
+                     command, defaults to mvim.
+
+EOF
+}
+
+#
+# minihub clone username repo
+#
+clone () {
+  if [ "$prefix" == "" ]; then
+    echo "\$MINIHUB_PREFIX unset, set to ~/src";
+    prefix="$HOME/src"
+  fi;
+
+  set $args
+  for arg
+  do
+    if [ "$name" == "" ]; then
+      name=$arg
+    elif [ "$repo" == "" ]; then
+      repo=$arg
+    fi
+  done
+
+  [ "$name" == "" ] && echo Please provide a username and repository && exit 1;
+  [ "$repo" == "" ] && echo No repository provided && exit 1;
+
+  echo "Cloned in $prefix/$name/$repo"
+
+  mkdir -p $prefix/$name
+  git clone git://github.com/$name/$repo.git $prefix/$name/$repo
+
+  echo
+  echo "Cloned in $prefix/$name/$repo"
+  exit 0
+}
+
+#
+# From a git repository:
+# minihub browse
+#
+browse () {
+  url=$(git config --get remote.origin.url |
+    sed "s/^git[@:]/https:/" |
+    sed "s/\.git$//" |
+    sed "s/\.com:/\.com\//"
+  );
+  [ "$browser" == "" ] && echo "\$MINIHUB_BROWSER unset, defaults to open." && browser=open
+  echo Opening $url in $browser browser
+  [ "$url" = "" ] && echo "Unable to guess url from git remote" && exit 1;
+  $browser $url
+  exit 0
+}
+
+#
+# From a git repository:
+# minihub issue 2
+#
+issue () {
+  url=$(git config --get remote.origin.url |
+    sed "s/^git[@:]/https:/" |
+    sed "s/\.git$//" |
+    sed "s/\.com:/\.com\//"
+  );
+  [ "$browser" == "" ] && browser=open;
+
+  set $args
+
+  for arg
+  do
+    if [ "$num" == "" ]; then
+      num=$arg
+    fi
+  done
+
+  echo Opening $url/issues in $browser browser
+  [ "$url" = "" ] && echo "Unable to guess url from git remote" && exit 1;
+  $browser $url/issues/$num
+  exit 0
+}
+
+# minihub edit user repo
+edit () {
+  [ "$editor" == "" ] && echo "\$MINIHUB_EDITOR unset, defaults to mvim." && editor=mvim
+  [ "$prefix" == "" ] && echo "\$MINIHUB_PREFIX unset, defaults to ~/src." && prefix=$HOME/src
+
+  set $args
+  for arg
+  do
+    if [ "$name" == "" ]; then
+      name=$arg
+    elif [ "$repo" == "" ]; then
+      repo=$arg
+    fi
+  done
+
+  [ "$name" == "" ] && echo "Please provide a username and (optional) repository" && exit 1;
+
+  echo Opening $prefix/$name/$repo in $editor editor
+  $editor $prefix/$name/$repo
+  exit 0
+}
+
+if [ "$1" != "" ]; then
+  wl=(clone browse issue edit help)
+  for i in "${wl[@]}"
+  do
+    if [ "$i" == "$1" ]
+    then
+      $1
+      exit 0
+  fi
+  done
+fi
+
+help
+exit 0

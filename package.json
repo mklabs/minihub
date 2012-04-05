@@ -1,0 +1,15 @@
+{
+  "author": "mklabs",
+  "name": "minihub",
+  "description": "GitHub Buddy - Bash utilities to work with github, matching my setup / workflow",
+  "version": "0.0.1",
+  "repository": {
+    "url": ""
+  },
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "bin": "./minihub"
+}
