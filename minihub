@@ -5,6 +5,8 @@ prefix=$MINIHUB_PREFIX;
 browser=$MINIHUB_BROWSER;
 editor=$MINIHUB_EDITOR;
 
+GITHUB_USER=$(git config --get github.user)
+
 args=`getopt $*`
 
 help () {
@@ -51,9 +53,7 @@ clone () {
   done
 
   [ "$name" == "" ] && echo Please provide a username and repository && exit 1;
-  [ "$repo" == "" ] && echo No repository provided && exit 1;
-
-  echo "Cloned in $prefix/$name/$repo"
+  [ "$repo" == "" ] && repo=$name && name=$GITHUB_USER && echo "No repository provided, assuming $name/$repo";
 
   mkdir -p $prefix/$name
   git clone git://github.com/$name/$repo.git $prefix/$name/$repo
